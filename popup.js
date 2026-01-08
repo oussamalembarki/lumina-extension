@@ -1,17 +1,15 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('toggleBtn');
-    const statusText = document.getElementById('statusText');
+    const status = document.getElementById('statusText');
 
-    chrome.storage.local.get(['enabled'], (result) => {
-        if (btn) {
-            btn.checked = result.enabled || false;
-            statusText.innerText = btn.checked ? "ON" : "OFF";
-        }
+    chrome.storage.local.get(['enabled'], (res) => {
+        btn.checked = res.enabled || false;
+        status.innerText = btn.checked ? "STUDY MODE: ON" : "STUDY MODE: OFF";
     });
 
     btn.onchange = () => {
         chrome.storage.local.set({ enabled: btn.checked }, () => {
-            statusText.innerText = btn.checked ? "ON" : "OFF";
+            status.innerText = btn.checked ? "STUDY MODE: ON" : "STUDY MODE: OFF";
         });
     };
 });

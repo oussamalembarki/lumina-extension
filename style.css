@@ -1,0 +1,92 @@
+/* --- Hiding Distractions --- */
+#secondary, #comments, ytd-live-chat-frame { 
+    display: none !important; 
+}
+
+#primary { 
+    padding-right: 380px !important; 
+    transition: padding 0.3s ease; 
+}
+
+/* --- The Notepad Window --- */
+#study-notepad {
+    position: fixed;
+    top: 100px;
+    right: 25px;
+    width: 320px;
+    height: 450px;
+    min-width: 250px;
+    min-height: 180px; 
+    background-color: #0f0f0f;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    /* No padding here; we let children handle it */
+    padding: 0; 
+    z-index: 9999;
+    border-radius: 16px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+    
+    /* Layout for Resize Fix */
+    display: flex;
+    flex-direction: column;
+    resize: both; 
+    overflow: hidden; 
+}
+
+/* --- The Draggable Header --- */
+#notepad-header {
+    padding: 12px 15px;
+    background: #1a1a1a;
+    cursor: move; /* The "Move" icon cursor */
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    border-bottom: 1px solid #333;
+    user-select: none; /* Prevents text highlighting while dragging */
+}
+
+/* --- The Text Area --- */
+#noteArea {
+    flex: 1 1 auto; /* Grow/Shrink automatically */
+    width: 100%;
+    background: #121212;
+    color: #efefef;
+    border: none;
+    padding: 15px;
+    resize: none; /* Disable native resize; we resize the parent instead */
+    outline: none;
+    font-family: 'Roboto', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    box-sizing: border-box;
+}
+
+/* --- Buttons & Scrollbar --- */
+.study-btn {
+    border-radius: 18px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 500;
+    border: none;
+    transition: 0.2s;
+}
+
+#addTimestamp { background: #272727; color: #3ea6ff; border: 1px solid #333; }
+#addTimestamp:hover { background: #333; }
+
+#downloadNotes { background: #fff; color: #0f0f0f; }
+#downloadNotes:hover { background: #d9d9d9; }
+
+#noteArea::-webkit-scrollbar { width: 8px; }
+#noteArea::-webkit-scrollbar-track { background: #1e1e1e; }
+#noteArea::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
+
+/* --- Resize Icon (Bottom Right) --- */
+.resize-label {
+    position: absolute;
+    bottom: 2px;
+    right: 5px;
+    font-size: 12px;
+    color: #555;
+    pointer-events: none; /* Allows clicks to pass through to the resize handle */
+}
