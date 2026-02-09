@@ -1,125 +1,128 @@
+// --- 1. LOGIC FIX: Dynamic CSS Injection ---
+function toggleDynamicStyles(isEnabled) {
+    const styleId = "focustube-dynamic-css";
+    let styleTag = document.getElementById(styleId);
+
+    if (isEnabled) {
+        if (!styleTag) {
+            styleTag = document.createElement("style");
+            styleTag.id = styleId;
+            styleTag.innerHTML = `
+                #secondary, #comments, ytd-live-chat-frame { display: none !important; }
+                #primary { 
+                    max-width: 80% !important; 
+                    margin-left: 40px !important; 
+                    margin-right: auto !important; 
+                }
+                ytd-browse[page-subtype="home"] #contents { display: none !important; }
+                ytd-browse[page-subtype="home"]::after { 
+                    content: "Focus Mode Active: Use Search to begin."; 
+                    display: block; text-align: center; padding: 100px; color: #888; font-size: 18px;
+                }
+            `;
+            document.head.appendChild(styleTag);
+        }
+    } else {
+        if (styleTag) styleTag.remove();
+    }
+}
+
+// --- 2. MAIN APP ---
 function applyStudyMode() {
-  if (!chrome.runtime?.id) return; 
+    if (!chrome.runtime?.id) return;
 
-  chrome.storage.local.get(['enabled', 'myNotes'], (result) => {
-    let notepad = document.getElementById('study-notepad');
+    chrome.storage.local.get(['enabled', 'myNotes'], (result) => {
+        const isEnabled = result.enabled || false;
+        toggleDynamicStyles(isEnabled);
 
-    if (result.enabled) {
-      if (!notepad) {
-        notepad = document.createElement('div');
-        notepad.id = 'study-notepad';
-        
-        // HTML Structure
-        notepad.innerHTML = `
-          <div id="notepad-header">
-            <span style="font-weight:600; font-size:12px; color:#aaa; letter-spacing:1px;">STUDY MODE</span>
-            <div style="display:flex; gap:8px;" onmousedown="event.stopPropagation()"> 
-              <button id="addTimestamp" class="study-btn">+ Time</button>
-              <button id="downloadNotes" class="study-btn">Export</button>
-            </div>
-          </div>
-          <textarea id="noteArea" placeholder="Type notes here...">${result.myNotes || ""}</textarea>
-          <div class="resize-label">◢</div>
-        `;
-        document.body.appendChild(notepad);
+        let notepad = document.getElementById('study-notepad');
 
-        // ACTIVATE SAFE DRAGGING
-        makeDraggable(notepad);
+        if (isEnabled) {
+            if (!notepad) {
+                notepad = document.createElement('div');
+                notepad.id = 'study-notepad';
+                
+                // THE UPDATE: Title is now RED (#FF0000)
+                notepad.innerHTML = `
+                    <div id="notepad-header">
+                        <span style="font-weight:700; font-size:14px; color:#FF0000; letter-spacing:1px; font-family:'Roboto', sans-serif;">FOCUSTUBE</span>
+                        <div style="display:flex; gap:8px;" onmousedown="event.stopPropagation()"> 
+                            <button id="addTimestamp" class="study-btn">+ Time</button>
+                            <button id="downloadNotes" class="study-btn">Export</button>
+                        </div>
+                    </div>
+                    <textarea id="noteArea" placeholder="Type your study notes here...">${result.myNotes || ""}</textarea>
+                    <div class="resize-handle"></div>
+                `;
+                document.body.appendChild(notepad);
+                makeDraggable(notepad);
+            }
+            syncTheme(notepad);
+            setupNotepadLogic(notepad);
+        } else if (notepad) {
+            notepad.remove();
+        }
+    });
+}
 
-        const area = document.getElementById('noteArea');
-
-        // Timestamp Logic
-        document.getElementById('addTimestamp').onclick = () => {
-          const video = document.querySelector('video');
-          if (video) {
+// --- 3. EVENT HANDLERS ---
+function setupNotepadLogic(notepad) {
+    const area = document.getElementById('noteArea');
+    
+    document.getElementById('addTimestamp').onclick = () => {
+        const video = document.querySelector('video');
+        if (video) {
             const t = Math.floor(video.currentTime);
-            const m = Math.floor(t / 60);
-            const s = t % 60;
-            const stamp = `\n[${m}:${s < 10 ? '0' + s : s}] `;
-            area.value += stamp;
+            area.value += `\n[${Math.floor(t / 60)}:${(t % 60).toString().padStart(2, '0')}] `;
             area.focus();
             chrome.storage.local.set({ myNotes: area.value });
-          }
-        };
+        }
+    };
 
-        // Download Logic
-        document.getElementById('downloadNotes').onclick = () => {
-          const blob = new Blob([area.value], { type: 'text/plain' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'youtube-study-notes.txt';
-          a.click();
-        };
+    document.getElementById('downloadNotes').onclick = () => {
+        const blob = new Blob([area.value], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'FocusTube-Notes.txt';
+        a.click();
+    };
 
-        // Auto-save
-        area.oninput = () => { 
-          if (chrome.runtime?.id) chrome.storage.local.set({ myNotes: area.value }); 
-        };
-      }
-    } else {
-      if (notepad) notepad.remove();
-      const primary = document.getElementById('primary');
-      if (primary) primary.style.paddingRight = '0';
-    }
-  });
+    area.oninput = () => chrome.storage.local.set({ myNotes: area.value });
 }
 
-// --- UPDATED SAFE DRAGGING FUNCTION ---
-function makeDraggable(element) {
-  let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-  const header = document.getElementById("notepad-header");
-
-  if (header) {
-    header.onmousedown = dragMouseDown;
-  }
-
-  function dragMouseDown(e) {
-    e = e || window.event;
-    e.preventDefault();
-    pos3 = e.clientX;
-    pos4 = e.clientY;
-    document.onmouseup = closeDragElement;
-    document.onmousemove = elementDrag;
-  }
-
-  function elementDrag(e) {
-    e = e || window.event;
-    e.preventDefault();
-    
-    // Calculate new cursor position
-    pos1 = pos3 - e.clientX;
-    pos2 = pos4 - e.clientY;
-    pos3 = e.clientX;
-    pos4 = e.clientY;
-
-    // Calculate where the box WANTS to go
-    let newTop = element.offsetTop - pos2;
-    let newLeft = element.offsetLeft - pos1;
-
-    // --- THE INVISIBLE WALLS (Boundary Checks) ---
-    // 1. Top Wall: Don't go higher than 60px (keeps it below YouTube navbar)
-    if (newTop < 60) newTop = 60; 
-    
-    // 2. Left Wall: Don't go off the left side
-    if (newLeft < 0) newLeft = 0;
-
-    // 3. Bottom Wall: Keep at least 50px visible
-    if (newTop > window.innerHeight - 50) newTop = window.innerHeight - 50;
-
-    // 4. Right Wall: Keep at least 50px visible
-    if (newLeft > window.innerWidth - 50) newLeft = window.innerWidth - 50;
-
-    // Apply the SAFE coordinates
-    element.style.top = newTop + "px";
-    element.style.left = newLeft + "px";
-    element.style.right = 'auto'; 
-  }
-
-  function closeDragElement() {
-    document.onmouseup = null;
-    document.onmousemove = null;
-  }
+function syncTheme(notepad) {
+    const isDark = document.documentElement.hasAttribute('dark');
+    notepad.className = isDark ? 'dark-theme' : 'light-theme';
 }
 
-setInterval(applyStudyMode, 1000);
+function makeDraggable(el) {
+    let p1 = 0, p2 = 0, p3 = 0, p4 = 0;
+    const h = document.getElementById("notepad-header");
+    
+    h.onmousedown = (e) => {
+        e.preventDefault();
+        p3 = e.clientX; p4 = e.clientY;
+        document.onmouseup = () => { document.onmouseup = null; document.onmousemove = null; };
+        document.onmousemove = (e) => {
+            e.preventDefault();
+            p1 = p3 - e.clientX; p2 = p4 - e.clientY;
+            p3 = e.clientX; p4 = e.clientY;
+            
+            let top = el.offsetTop - p2;
+            let left = el.offsetLeft - p1;
+
+            if (top < 60) top = 60;
+            if (left < 0) left = 0;
+            if (top > window.innerHeight - 50) top = window.innerHeight - 50;
+            if (left > window.innerWidth - 50) left = window.innerWidth - 50;
+
+            el.style.top = top + "px";
+            el.style.left = left + "px";
+            el.style.right = 'auto';
+        };
+    };
+}
+
+const observer = new MutationObserver(() => applyStudyMode());
+observer.observe(document.body, { childList: true, subtree: true });
+applyStudyMode();
