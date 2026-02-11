@@ -13,4 +13,3 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 });
-// this is a delete test 
