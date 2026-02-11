@@ -1,7 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "FocusTube",
-  "version": "2.0",
+  "name": "Lumina - Focus Mode for YouTube",
+  "version": "2.1",
+  "description": "Distraction-free learning. Hides the noise, keeps the video left-aligned, and includes a timestamped notepad.",
   "action": {
     "default_popup": "popup.html"
   },

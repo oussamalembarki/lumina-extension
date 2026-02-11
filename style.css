@@ -1,5 +1,5 @@
-/* --- The Notepad Window (Glassmorphism) --- */
-#study-notepad {
+/* --- The Lumina Notepad Window --- */
+#lumina-notepad {
     position: fixed;
     top: 100px;
     right: 25px;
@@ -19,11 +19,11 @@
 }
 
 /* Theme Classes */
-#study-notepad.dark-theme { 
+#lumina-notepad.dark-theme { 
     background-color: rgba(15, 15, 15, 0.95); 
     border: 1px solid rgba(255, 255, 255, 0.1); 
 }
-#study-notepad.light-theme { 
+#lumina-notepad.light-theme { 
     background-color: rgba(255, 255, 255, 0.95); 
     border: 1px solid rgba(0, 0, 0, 0.1); 
 }
@@ -38,7 +38,7 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* THE FIX: White Text for Typing */
+/* Text Area: White Text for Visibility */
 #noteArea { 
     flex: 1; 
     width: 100%; 
@@ -50,18 +50,15 @@
     line-height: 1.6; 
     background: transparent; 
     font-family: 'Roboto', sans-serif;
-    color: #ffffff !important; /* Forces text to be WHITE */
+    color: #ffffff !important; 
 }
 
-/* Placeholder color (Light Grey) */
-#noteArea::placeholder {
-    color: #888;
-}
+#noteArea::placeholder { color: #888; }
 
-/* --- Modern YouTube-Style Buttons --- */
+/* --- Modern Buttons --- */
 .study-btn {
-    border-radius: 18px; /* Pill shape like YouTube buttons */
-    padding: 8px 16px;
+    border-radius: 18px; 
+    padding: 6px 14px;
     cursor: pointer;
     font-size: 12px;
     font-weight: 600;
@@ -70,34 +67,23 @@
     letter-spacing: 0.5px;
 }
 
-/* Time Button: Dark Grey styling (like YouTube 'Manage' buttons) */
 #addTimestamp { 
     background: #272727; 
     color: #f1f1f1; 
     border: 1px solid rgba(255,255,255,0.1);
 }
-#addTimestamp:hover { 
-    background: #3f3f3f; 
-}
+#addTimestamp:hover { background: #3f3f3f; }
 
-/* Export Button: White/Red styling for contrast */
 #downloadNotes { 
     background: #f1f1f1; 
     color: #0f0f0f; 
     margin-left: 5px;
 }
-#downloadNotes:hover { 
-    background: #ffffff; 
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
-}
+#downloadNotes:hover { background: #ffffff; }
 
 /* Resize Handle */
 .resize-handle { 
-    position: absolute; 
-    bottom: 0; 
-    right: 0; 
-    width: 15px; 
-    height: 15px; 
+    position: absolute; bottom: 0; right: 0; width: 15px; height: 15px; 
     cursor: nwse-resize; 
     background: linear-gradient(135deg, transparent 50%, #555 50%); 
     opacity: 0.5; 

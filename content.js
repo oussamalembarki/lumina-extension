@@ -1,6 +1,6 @@
-// --- 1. LOGIC FIX: Dynamic CSS Injection ---
+// --- 1. LOGIC FIX: Invisible Sidebar (Keeps Video Left) ---
 function toggleDynamicStyles(isEnabled) {
-    const styleId = "focustube-dynamic-css";
+    const styleId = "lumina-dynamic-css";
     let styleTag = document.getElementById(styleId);
 
     if (isEnabled) {
@@ -8,16 +8,17 @@ function toggleDynamicStyles(isEnabled) {
             styleTag = document.createElement("style");
             styleTag.id = styleId;
             styleTag.innerHTML = `
-                #secondary, #comments, ytd-live-chat-frame { display: none !important; }
-                #primary { 
-                    max-width: 80% !important; 
-                    margin-left: 40px !important; 
-                    margin-right: auto !important; 
+                /* Hide Comments & Chat completely to save vertical space */
+                ytd-watch-flexy #comments, 
+                ytd-live-chat-frame { 
+                    display: none !important; 
                 }
-                ytd-browse[page-subtype="home"] #contents { display: none !important; }
-                ytd-browse[page-subtype="home"]::after { 
-                    content: "Focus Mode Active: Use Search to begin."; 
-                    display: block; text-align: center; padding: 100px; color: #888; font-size: 18px;
+
+                /* THE KEY FIX: Make Sidebar Invisible but KEEP its layout space.
+                   This forces the video to stay on the LEFT (Normal Format). */
+                ytd-watch-flexy #secondary { 
+                    visibility: hidden !important;
+                    pointer-events: none !important; 
                 }
             `;
             document.head.appendChild(styleTag);
@@ -28,30 +29,36 @@ function toggleDynamicStyles(isEnabled) {
 }
 
 // --- 2. MAIN APP ---
-function applyStudyMode() {
+function applyLuminaMode() {
     if (!chrome.runtime?.id) return;
 
     chrome.storage.local.get(['enabled', 'myNotes'], (result) => {
         const isEnabled = result.enabled || false;
+        
+        // 1. Apply the sidebar hiding logic
         toggleDynamicStyles(isEnabled);
 
-        let notepad = document.getElementById('study-notepad');
+        let notepad = document.getElementById('lumina-notepad');
+        
+        // 2. CHECK: Are we on a Watch Page?
+        const isWatchPage = window.location.href.includes("/watch");
 
-        if (isEnabled) {
+        if (isEnabled && isWatchPage) {
+            // SHOW NOTEPAD only if Enabled AND Watching a video
             if (!notepad) {
                 notepad = document.createElement('div');
-                notepad.id = 'study-notepad';
+                notepad.id = 'lumina-notepad';
                 
-                // THE UPDATE: Title is now RED (#FF0000)
+                // Rebranded to LUMINA (Red Title)
                 notepad.innerHTML = `
                     <div id="notepad-header">
-                        <span style="font-weight:700; font-size:14px; color:#FF0000; letter-spacing:1px; font-family:'Roboto', sans-serif;">FOCUSTUBE</span>
+                        <span style="font-weight:700; font-size:14px; color:#FF0000; letter-spacing:2px; font-family:'Roboto', sans-serif;">LUMINA</span>
                         <div style="display:flex; gap:8px;" onmousedown="event.stopPropagation()"> 
                             <button id="addTimestamp" class="study-btn">+ Time</button>
                             <button id="downloadNotes" class="study-btn">Export</button>
                         </div>
                     </div>
-                    <textarea id="noteArea" placeholder="Type your study notes here...">${result.myNotes || ""}</textarea>
+                    <textarea id="noteArea" placeholder="Capture your insights...">${result.myNotes || ""}</textarea>
                     <div class="resize-handle"></div>
                 `;
                 document.body.appendChild(notepad);
@@ -59,8 +66,12 @@ function applyStudyMode() {
             }
             syncTheme(notepad);
             setupNotepadLogic(notepad);
-        } else if (notepad) {
-            notepad.remove();
+            
+        } else {
+            // HIDE NOTEPAD if disabled OR if on Home Page
+            if (notepad) {
+                notepad.remove();
+            }
         }
     });
 }
@@ -68,29 +79,38 @@ function applyStudyMode() {
 // --- 3. EVENT HANDLERS ---
 function setupNotepadLogic(notepad) {
     const area = document.getElementById('noteArea');
-    
-    document.getElementById('addTimestamp').onclick = () => {
-        const video = document.querySelector('video');
-        if (video) {
-            const t = Math.floor(video.currentTime);
-            area.value += `\n[${Math.floor(t / 60)}:${(t % 60).toString().padStart(2, '0')}] `;
-            area.focus();
-            chrome.storage.local.set({ myNotes: area.value });
-        }
-    };
+    if (!area) return; 
 
-    document.getElementById('downloadNotes').onclick = () => {
-        const blob = new Blob([area.value], { type: 'text/plain' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'FocusTube-Notes.txt';
-        a.click();
-    };
+    const btnTime = document.getElementById('addTimestamp');
+    const btnDown = document.getElementById('downloadNotes');
+
+    if (btnTime) {
+        btnTime.onclick = () => {
+            const video = document.querySelector('video');
+            if (video) {
+                const t = Math.floor(video.currentTime);
+                area.value += `\n[${Math.floor(t / 60)}:${(t % 60).toString().padStart(2, '0')}] `;
+                area.focus();
+                chrome.storage.local.set({ myNotes: area.value });
+            }
+        };
+    }
+
+    if (btnDown) {
+        btnDown.onclick = () => {
+            const blob = new Blob([area.value], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'Lumina-Notes.txt'; // Rebranded Filename
+            a.click();
+        };
+    }
 
     area.oninput = () => chrome.storage.local.set({ myNotes: area.value });
 }
 
 function syncTheme(notepad) {
+    if (!notepad) return;
     const isDark = document.documentElement.hasAttribute('dark');
     notepad.className = isDark ? 'dark-theme' : 'light-theme';
 }
@@ -98,6 +118,7 @@ function syncTheme(notepad) {
 function makeDraggable(el) {
     let p1 = 0, p2 = 0, p3 = 0, p4 = 0;
     const h = document.getElementById("notepad-header");
+    if (!h) return;
     
     h.onmousedown = (e) => {
         e.preventDefault();
@@ -123,6 +144,15 @@ function makeDraggable(el) {
     };
 }
 
-const observer = new MutationObserver(() => applyStudyMode());
-observer.observe(document.body, { childList: true, subtree: true });
-applyStudyMode();
+// Watch for URL changes (SPA navigation)
+let lastUrl = location.href; 
+new MutationObserver(() => {
+  const url = location.href;
+  if (url !== lastUrl) {
+    lastUrl = url;
+    applyLuminaMode();
+  }
+  applyLuminaMode();
+}).observe(document, {subtree: true, childList: true});
+
+applyLuminaMode();
