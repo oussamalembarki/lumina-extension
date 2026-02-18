@@ -1,90 +1,312 @@
-/* --- The Lumina Notepad Window --- */
+/* =============================================================================
+   LUMINA 3.0 — style.css
+   Phase 3: Repaint Suppression Class + GPU Layer Guard
+   Builds on Phase 2: Glassmorphism 2.0 + Bento Header + Focus Score
+   ============================================================================= */
+
+
+/* =============================================================================
+   REPAINT SUPPRESSION
+   Applied dynamically by applySuppression() in content.js to #secondary,
+   #comments, and ytd-live-chat-frame when Lumina Mode is active.
+
+   content-visibility: auto  — Tells the browser to skip layout and paint
+                                for this subtree when it's off-screen or hidden.
+                                Unlike `display:none`, the DOM state is fully
+                                preserved: scroll position, form inputs, etc.
+
+   contain: layout paint      — Creates a hard containment boundary. The
+                                browser cannot "see into" this subtree when
+                                painting the rest of the page, so any change
+                                inside it cannot trigger repaints outside it
+                                (and vice versa). This is the key property that
+                                decouples the sidebar's rendering from the video.
+
+   contain-intrinsic-size     — Without this, `content-visibility: auto` would
+   : auto 1000px                collapse the element to 0px height when skipped,
+                                causing a scrollbar jump. `auto 1000px` gives the
+                                browser a hint for the element's natural size
+                                while `auto` lets it remember the real size
+                                after the first render and use that going forward.
+
+   Removal (Lumina OFF):      classList.remove() immediately restores full
+                              rendering — no style tag teardown required.
+   ============================================================================= */
+
+.lumina-suppress-paint {
+    content-visibility: auto;
+    contain: layout paint;
+    contain-intrinsic-size: auto 1000px;
+}
+
+
+/* --- BASE NOTEPAD SHELL --- */
+/* backdrop-filter does the heavy lifting for the glass effect.
+   box-shadow and border-color are overridden at runtime by AmbientEngine
+   so these values only ever appear as the initial mount state or fallback. */
 #lumina-notepad {
     position: fixed;
     top: 100px;
     right: 25px;
-    width: 320px;
-    height: 450px;
+    width: 340px;
+    height: 460px;
     min-width: 280px;
-    min-height: 200px; 
+    min-height: 220px;
     z-index: 99999;
-    border-radius: 16px;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+
+    /* Glassmorphism 2.0 base */
+    background: rgba(10, 10, 10, 0.45);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+
+    /* AmbientEngine overwrites these two at runtime */
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow:
+        0 8px 32px rgba(255, 0, 0, 0.15),   /* Lumina Red fallback glow */
+        0 24px 64px rgba(0, 0, 0, 0.55);
+
+    border-radius: 18px;
     display: flex;
     flex-direction: column;
-    resize: both; 
-    overflow: hidden; 
-    transition: all 0.3s ease;
+    resize: both;
+    overflow: hidden;
+    transition:
+        box-shadow 1.8s ease,     /* slow ambient color transitions feel organic */
+        border-color 1.8s ease;
 }
 
-/* Theme Classes */
-#lumina-notepad.dark-theme { 
-    background-color: rgba(15, 15, 15, 0.95); 
-    border: 1px solid rgba(255, 255, 255, 0.1); 
-}
-#lumina-notepad.light-theme { 
-    background-color: rgba(255, 255, 255, 0.95); 
-    border: 1px solid rgba(0, 0, 0, 0.1); 
+/* Light theme override — keep glass readable on light pages */
+#lumina-notepad.light-theme {
+    background: rgba(245, 245, 245, 0.55);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border-color: rgba(0, 0, 0, 0.10);
 }
 
-/* --- UI Enhancements --- */
-#notepad-header { 
-    padding: 12px 15px; 
-    cursor: move; 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+
+/* =============================================================================
+   BENTO HEADER
+   Three-column CSS Grid:
+     [Left: Focus Score] [Center: Timestamp] [Right: Export]
+   The header is also the drag handle (cursor:move), but individual cells
+   suppress drag on mousedown when they contain interactive elements.
+   ============================================================================= */
+
+#notepad-header {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    cursor: move;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    user-select: none;
+
+    /* Subtle inner top highlight — a Glassmorphism 2.0 signature detail */
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.05) 0%,
+        transparent 100%
+    );
 }
 
-/* Text Area: White Text for Visibility */
-#noteArea { 
-    flex: 1; 
-    width: 100%; 
-    border: none; 
-    padding: 15px; 
-    resize: none; 
-    outline: none; 
-    font-size: 14px; 
-    line-height: 1.6; 
-    background: transparent; 
-    font-family: 'Roboto', sans-serif;
-    color: #ffffff !important; 
+#lumina-notepad.light-theme #notepad-header {
+    border-bottom-color: rgba(0, 0, 0, 0.07);
+    background: linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, transparent 100%);
 }
 
-#noteArea::placeholder { color: #888; }
+.bento-cell {
+    display: flex;
+    align-items: center;
+}
 
-/* --- Modern Buttons --- */
-.study-btn {
-    border-radius: 18px; 
-    padding: 6px 14px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 600;
-    transition: all 0.2s ease;
-    border: none;
+.bento-left  { justify-content: flex-start; gap: 6px; }
+.bento-center { justify-content: center; }
+.bento-right  { justify-content: flex-end; }
+
+
+/* --- WORDMARK --- */
+.lumina-wordmark {
+    font-weight: 800;
+    font-size: 11px;
+    color: #FF0000;
+    letter-spacing: 2.5px;
+    font-family: 'Roboto', 'Helvetica Neue', sans-serif;
+    text-transform: uppercase;
+}
+
+.focus-divider {
+    color: rgba(255, 255, 255, 0.25);
+    font-size: 13px;
+    font-weight: 300;
+    line-height: 1;
+}
+
+#lumina-notepad.light-theme .focus-divider {
+    color: rgba(0, 0, 0, 0.2);
+}
+
+
+/* --- FOCUS SCORE --- */
+/* Starts as an em-dash, transitions to a live number once video plays.
+   Color is overwritten by FocusEngine.renderScore() based on score value. */
+#lumina-focus-score {
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'Roboto Mono', 'SF Mono', monospace;
+    color: #4ade80; /* green default, overridden by engine */
     letter-spacing: 0.5px;
+    transition: color 0.6s ease;
+    min-width: 32px; /* prevents layout shift when score changes width */
 }
 
-#addTimestamp { 
-    background: #272727; 
-    color: #f1f1f1; 
-    border: 1px solid rgba(255,255,255,0.1);
-}
-#addTimestamp:hover { background: #3f3f3f; }
 
-#downloadNotes { 
-    background: #f1f1f1; 
-    color: #0f0f0f; 
-    margin-left: 5px;
-}
-#downloadNotes:hover { background: #ffffff; }
+/* =============================================================================
+   BUTTONS
+   Two variants: Stamp (ghost style) and Export (filled style).
+   Both share a base class for sizing and transition.
+   ============================================================================= */
 
-/* Resize Handle */
-.resize-handle { 
-    position: absolute; bottom: 0; right: 0; width: 15px; height: 15px; 
-    cursor: nwse-resize; 
-    background: linear-gradient(135deg, transparent 50%, #555 50%); 
-    opacity: 0.5; 
+.study-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 20px;
+    padding: 5px 12px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    transition: background 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease;
+    border: none;
+    font-family: 'Roboto', sans-serif;
+    white-space: nowrap;
+}
+
+.study-btn:active {
+    transform: scale(0.94);
+}
+
+.study-btn svg {
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+
+/* Ghost / outline style — Stamp */
+.btn-timestamp {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.80);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.btn-timestamp:hover {
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 2px 10px rgba(255, 255, 255, 0.08);
+}
+
+#lumina-notepad.light-theme .btn-timestamp {
+    background: rgba(0, 0, 0, 0.06);
+    color: rgba(0, 0, 0, 0.70);
+    border-color: rgba(0, 0, 0, 0.10);
+}
+
+#lumina-notepad.light-theme .btn-timestamp:hover {
+    background: rgba(0, 0, 0, 0.11);
+}
+
+/* Filled / solid style — Export */
+.btn-export {
+    background: rgba(255, 255, 255, 0.92);
+    color: #0f0f0f;
+}
+
+.btn-export:hover {
+    background: #ffffff;
+    box-shadow: 0 2px 12px rgba(255, 255, 255, 0.20);
+}
+
+#lumina-notepad.light-theme .btn-export {
+    background: #1a1a1a;
+    color: #f5f5f5;
+}
+
+#lumina-notepad.light-theme .btn-export:hover {
+    background: #333;
+}
+
+
+/* =============================================================================
+   TEXTAREA
+   ============================================================================= */
+
+#noteArea {
+    flex: 1;
+    width: 100%;
+    border: none;
+    padding: 14px 16px;
+    resize: none;
+    outline: none;
+    font-size: 13.5px;
+    line-height: 1.65;
+    background: transparent;
+    font-family: 'Roboto', sans-serif;
+    color: rgba(255, 255, 255, 0.88);
+    caret-color: #FF0000;
+}
+
+#noteArea::placeholder {
+    color: rgba(255, 255, 255, 0.22);
+    font-style: italic;
+}
+
+#lumina-notepad.light-theme #noteArea {
+    color: rgba(10, 10, 10, 0.85);
+    caret-color: #FF0000;
+}
+
+#lumina-notepad.light-theme #noteArea::placeholder {
+    color: rgba(0, 0, 0, 0.28);
+}
+
+
+/* =============================================================================
+   RESIZE HANDLE
+   ============================================================================= */
+
+.resize-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 16px;
+    height: 16px;
+    cursor: nwse-resize;
+    /* Two-line diagonal mark using a gradient */
+    background:
+        linear-gradient(
+            135deg,
+            transparent 30%,
+            rgba(255, 255, 255, 0.18) 30%,
+            rgba(255, 255, 255, 0.18) 40%,
+            transparent 40%,
+            transparent 55%,
+            rgba(255, 255, 255, 0.18) 55%,
+            rgba(255, 255, 255, 0.18) 65%,
+            transparent 65%
+        );
+    border-bottom-right-radius: 18px;
+}
+
+#lumina-notepad.light-theme .resize-handle {
+    background:
+        linear-gradient(
+            135deg,
+            transparent 30%,
+            rgba(0, 0, 0, 0.15) 30%,
+            rgba(0, 0, 0, 0.15) 40%,
+            transparent 40%,
+            transparent 55%,
+            rgba(0, 0, 0, 0.15) 55%,
+            rgba(0, 0, 0, 0.15) 65%,
+            transparent 65%
+        );
 }
