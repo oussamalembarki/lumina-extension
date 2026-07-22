@@ -1,49 +1,9 @@
-/* =============================================================================
-   LUMINA 3.0 — style.css
-   Phase 3: Repaint Suppression Class + GPU Layer Guard
-   Builds on Phase 2: Glassmorphism 2.0 + Bento Header + Focus Score
-   ============================================================================= */
-
-
-/* =============================================================================
-   REPAINT SUPPRESSION
-   Applied dynamically by applySuppression() in content.js to #secondary,
-   #comments, and ytd-live-chat-frame when Lumina Mode is active.
-
-   content-visibility: auto  — Tells the browser to skip layout and paint
-                                for this subtree when it's off-screen or hidden.
-                                Unlike `display:none`, the DOM state is fully
-                                preserved: scroll position, form inputs, etc.
-
-   contain: layout paint      — Creates a hard containment boundary. The
-                                browser cannot "see into" this subtree when
-                                painting the rest of the page, so any change
-                                inside it cannot trigger repaints outside it
-                                (and vice versa). This is the key property that
-                                decouples the sidebar's rendering from the video.
-
-   contain-intrinsic-size     — Without this, `content-visibility: auto` would
-   : auto 1000px                collapse the element to 0px height when skipped,
-                                causing a scrollbar jump. `auto 1000px` gives the
-                                browser a hint for the element's natural size
-                                while `auto` lets it remember the real size
-                                after the first render and use that going forward.
-
-   Removal (Lumina OFF):      classList.remove() immediately restores full
-                              rendering — no style tag teardown required.
-   ============================================================================= */
-
 .lumina-suppress-paint {
     content-visibility: auto;
     contain: layout paint;
     contain-intrinsic-size: auto 1000px;
 }
 
-
-/* --- BASE NOTEPAD SHELL --- */
-/* backdrop-filter does the heavy lifting for the glass effect.
-   box-shadow and border-color are overridden at runtime by AmbientEngine
-   so these values only ever appear as the initial mount state or fallback. */
 #lumina-notepad {
     position: fixed;
     top: 100px;
@@ -54,15 +14,15 @@
     min-height: 220px;
     z-index: 99999;
 
-    /* Glassmorphism 2.0 base */
+
     background: rgba(10, 10, 10, 0.45);
     backdrop-filter: blur(16px) saturate(180%);
     -webkit-backdrop-filter: blur(16px) saturate(180%);
 
-    /* AmbientEngine overwrites these two at runtime */
+
     border: 1px solid rgba(255, 255, 255, 0.10);
     box-shadow:
-        0 8px 32px rgba(255, 0, 0, 0.15),   /* Lumina Red fallback glow */
+        0 8px 32px rgba(255, 0, 0, 0.15),
         0 24px 64px rgba(0, 0, 0, 0.55);
 
     border-radius: 18px;
@@ -71,26 +31,16 @@
     resize: both;
     overflow: hidden;
     transition:
-        box-shadow 1.8s ease,     /* slow ambient color transitions feel organic */
+        box-shadow 1.8s ease,     
         border-color 1.8s ease;
 }
 
-/* Light theme override — keep glass readable on light pages */
 #lumina-notepad.light-theme {
     background: rgba(245, 245, 245, 0.55);
     backdrop-filter: blur(16px) saturate(160%);
     -webkit-backdrop-filter: blur(16px) saturate(160%);
     border-color: rgba(0, 0, 0, 0.10);
 }
-
-
-/* =============================================================================
-   BENTO HEADER
-   Three-column CSS Grid:
-     [Left: Focus Score] [Center: Timestamp] [Right: Export]
-   The header is also the drag handle (cursor:move), but individual cells
-   suppress drag on mousedown when they contain interactive elements.
-   ============================================================================= */
 
 #notepad-header {
     display: grid;
@@ -102,7 +52,6 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     user-select: none;
 
-    /* Subtle inner top highlight — a Glassmorphism 2.0 signature detail */
     background: linear-gradient(
         to bottom,
         rgba(255, 255, 255, 0.05) 0%,
@@ -124,8 +73,6 @@
 .bento-center { justify-content: center; }
 .bento-right  { justify-content: flex-end; }
 
-
-/* --- WORDMARK --- */
 .lumina-wordmark {
     font-weight: 800;
     font-size: 11px;
@@ -146,26 +93,15 @@
     color: rgba(0, 0, 0, 0.2);
 }
 
-
-/* --- FOCUS SCORE --- */
-/* Starts as an em-dash, transitions to a live number once video plays.
-   Color is overwritten by FocusEngine.renderScore() based on score value. */
 #lumina-focus-score {
     font-size: 11px;
     font-weight: 700;
     font-family: 'Roboto Mono', 'SF Mono', monospace;
-    color: #4ade80; /* green default, overridden by engine */
+    color: #4ade80; 
     letter-spacing: 0.5px;
     transition: color 0.6s ease;
-    min-width: 32px; /* prevents layout shift when score changes width */
+    min-width: 32px; 
 }
-
-
-/* =============================================================================
-   BUTTONS
-   Two variants: Stamp (ghost style) and Export (filled style).
-   Both share a base class for sizing and transition.
-   ============================================================================= */
 
 .study-btn {
     display: inline-flex;
@@ -192,7 +128,6 @@
     opacity: 0.85;
 }
 
-/* Ghost / outline style — Stamp */
 .btn-timestamp {
     background: rgba(255, 255, 255, 0.08);
     color: rgba(255, 255, 255, 0.80);
@@ -214,7 +149,6 @@
     background: rgba(0, 0, 0, 0.11);
 }
 
-/* Filled / solid style — Export */
 .btn-export {
     background: rgba(255, 255, 255, 0.92);
     color: #0f0f0f;
@@ -233,11 +167,6 @@
 #lumina-notepad.light-theme .btn-export:hover {
     background: #333;
 }
-
-
-/* =============================================================================
-   TEXTAREA
-   ============================================================================= */
 
 #noteArea {
     flex: 1;
@@ -268,11 +197,6 @@
     color: rgba(0, 0, 0, 0.28);
 }
 
-
-/* =============================================================================
-   RESIZE HANDLE
-   ============================================================================= */
-
 .resize-handle {
     position: absolute;
     bottom: 0;
@@ -280,7 +204,6 @@
     width: 16px;
     height: 16px;
     cursor: nwse-resize;
-    /* Two-line diagonal mark using a gradient */
     background:
         linear-gradient(
             135deg,
