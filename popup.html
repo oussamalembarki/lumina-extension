@@ -1,25 +1,28 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-  <style>
-    body { width: 220px; padding: 25px; background: #0f0f0f; color: #fff; font-family: 'Roboto', sans-serif; text-align: center; }
-    h2 { font-size: 16px; margin-bottom: 20px; color: #FF0000; letter-spacing: 3px; font-weight: 700; }
-    .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
-    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-    input:checked + .slider { background-color: #FF0000; }
-    input:checked + .slider:before { transform: translateX(24px); }
-    #status { font-size: 11px; margin-top: 15px; color: #888; text-transform: uppercase; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina</title>
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-  <h2>LUMINA</h2>
-  <label class="switch">
-    <input type="checkbox" id="toggle">
-    <span class="slider"></span>
-  </label>
-  <div id="status">Ready to Focus</div>
-  <script src="popup.js"></script>
+
+    <main class="popup">
+        <h2>LUMINA</h2>
+
+        <label class="switch">
+            <input type="checkbox" id="toggle">
+            <span class="slider"></span>
+        </label>
+
+        <p id="status">Ready to Focus</p>
+    </main>
+
+    <script src="popup.js"></script>
+
 </body>
+
 </html>
